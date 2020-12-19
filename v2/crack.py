@@ -5,9 +5,9 @@ from backdoored_algo.const import S, K
 from secret import V, U, ro, teta
 
 ROUNDS = 5
+PTS = list(range(1 << 12))
 
 ro_inv = {ro[x]:x for x in ro}
-PTS = list(range(1 << 12))
 
 def split(x):
     for v in V:

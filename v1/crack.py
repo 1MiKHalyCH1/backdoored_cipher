@@ -1,14 +1,13 @@
-from itertools import cycle
-from random import getrandbits
-
 from backdoored_algo.cipher import Cipher
 from backdoored_algo.const import S, K
 from secret import V, U, ro, teta
 
 ROUNDS = 6
+PTS = list(range(1 << 12))
 
 ro_inv = {ro[x]:x for x in ro}
 S_inv = {S[x]:x for x in S}
+
 
 
 def split(x):
@@ -27,11 +26,7 @@ def check_key(pt, ct):
     if cosets[-1] == split(res_x)[1]:
         return True
 
-def crack_key(cipher):
-    cosets = {x:set() for x in U}
-    for x in range(len(S)):
-        cosets[split(x)[1]].add(x)
-
+def crack_key(cipher, cosets):
     right_cosets = set()
     pts = [((x << 6) | S[x]) for x in range(1<<6)]
     for pt in pts:
@@ -41,12 +36,16 @@ def crack_key(cipher):
 
     for coset in right_cosets:
         for key in cosets[coset]:
-            if all(Cipher(key, ROUNDS, 12).decrypt(cipher.encrypt(pt)) == pt for pt in pts):
+            if all(Cipher(key, ROUNDS, 12).decrypt(cipher.encrypt(pt)) == pt for pt in PTS):
                 return key
 
 
 if __name__ == '__main__':
+    cosets = {x:set() for x in U}
+    for x in range(len(S)):
+        cosets[split(x)[1]].add(x)
+
     for key in range(1<<6):
         cipher = Cipher(key, ROUNDS, 12)
-        assert crack_key(cipher) == key
+        assert crack_key(cipher, cosets) == key
     print('Done!')
