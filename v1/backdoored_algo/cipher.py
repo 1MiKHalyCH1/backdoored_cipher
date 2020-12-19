@@ -20,13 +20,13 @@ class Cipher:
     def _encrypt_block(self, block):
         L, R = block >> self._half_block_size, block & ((1 << self._half_block_size) - 1)
         for i in range(self._rounds):
-            L, R = R, L ^ (S[R] ^ self._keys[i])
+            L, R = R, L ^ S[R] ^ self._keys[i]
         return (L << self._half_block_size) | R
 
     def _decrypt_block(self, block):
         L, R = block >> self._half_block_size, block & ((1 << self._half_block_size) - 1)
         for i in range(self._rounds):
-            R, L = L, R ^ (S[L] ^ self._keys[self._rounds - i - 1])
+            R, L = L, R ^ S[L] ^ self._keys[self._rounds - i - 1]
         return (L << self._half_block_size) | R
 
     def encrypt(self, pt):

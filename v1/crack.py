@@ -47,6 +47,6 @@ def crack_key(cipher):
 
 if __name__ == '__main__':
     for key in range(1<<6):
-        cipher = Cipher(i, ROUNDS, 12)
-        assert crack_key(cipher) == i
+        cipher = Cipher(key, ROUNDS, 12)
+        assert crack_key(cipher) == key
     print('Done!')
