@@ -2,8 +2,9 @@ import operator
 
 from itertools import combinations, permutations
 from functools import reduce
-from random import shuffle
-
+from random import randint, shuffle
+from cryptanalysis.linear import linear_uniformity
+from cryptanalysis.differential import differential_uniformity
 
 def span(*basis):
     result = set()
@@ -21,7 +22,7 @@ def check_partition(partition, n):
         res.update(x)
     return res == set(range(1<<n))
 
-def make_ro(U):
+def make_rho(U):
     U = list(U)
     Y = U[:]
     shuffle(Y)
@@ -29,12 +30,12 @@ def make_ro(U):
         shuffle(Y)
     return dict(zip(U, Y))
 
-def dump_configs(S, K, V, U, ro, teta):
+def dump_configs(S, K, V, U, rho, teta):
     with open('const.py', 'w') as f:
         f.write(f'S = {S}\nK = {K}')
     
     with open('secret.py', 'w') as f:
-        f.write(f'''V = {set(V)}\nU = {set(U)}\nro = {ro}\nteta = {teta}''')
+        f.write(f'''V = {set(V)}\nU = {set(U)}\nrho= {rho}\nteta = {teta}''')
 
 def make_teta(V, U):
     res = list(permutations(V, len(V)))
@@ -44,26 +45,21 @@ def make_teta(V, U):
     teta_K = {u:dict(zip(keys, x)) for u,x in zip(U, [x[-1:] + x[:-1] for x in res])}
     return teta_S, teta_K
 
-def make_sbox(V, U, ro, teta, n):
+def make_sbox(V, U, rho, teta, n):
     S = [None] * (1<<n)
     for v in V:
         for u in U:
-            S[v^u] = ro[u] ^ teta[u][v]
+            S[v^u] = rho[u] ^ teta[u][v]
     return S
 
 def generate_sbox(V, U, n):
-    ro = make_ro(U)
+    rho= make_rho(U)
     teta_S, teta_K = make_teta(V, U)
-    S = make_sbox(V, U, ro, teta_S, n)
-    K = make_sbox(V, U, ro, teta_K, n)
-    return S, K, ro, teta_S
+    S = make_sbox(V, U, rho, teta_S, n)
+    K = make_sbox(V, U, rho, teta_K, n)
+    return S, K, rho, teta_S
 
-if __name__ == '__main__':
-    n = 6
-    res = set()
-    U = span(0x01, 0x19, 0x31)
-    print(len(U), U)
-
+def generate_V(U, n):
     s = set(range(1<<n)) - set(U)
     while len(s) > 3:
         for x in combinations(s, 3):
@@ -71,19 +67,35 @@ if __name__ == '__main__':
             if (X & U) - {0}:
                 continue
             if check_partition(partitions(X, U), n):
-                res.add(X)
+                yield X
                 break
         s -= X
 
-    res = list(res)
-    shuffle(res)
+def generate_best_data():
+    best_lin, best_dif = 100, 100
 
-    V = res[0]
-    S, K, ro, teta = generate_sbox(V, U, n)
+    for _ in range(200):
+        n = 6
+        x, y, z = [randint(1, (1<<n) - 1) for _ in range(3)]
+        if x^y == z:
+            continue
+        U = span(x, y, z)
+        if len(U) != 8:
+            continue
 
-    print(S)
-    print(K)
-    print(ro)
-    print(teta)
-    dump_configs(S, K, V, U, ro, teta)
+        for V in generate_V(U, n):
+            S, K, rho, teta = generate_sbox(V, U, n)
+            lin, dif = linear_uniformity(S), differential_uniformity(S)
+            x = list(V)
 
+            if lin <= best_lin and dif <= best_dif and not (lin == best_lin and dif == best_dif):
+                best_lin, best_dif = lin, dif
+                best_data = S, K, V, U, rho, teta
+                print(set(V), set(U))
+                print(lin, dif)
+                print(best_data)
+                print()
+                dump_configs(*best_data)
+
+if __name__ == '__main__':
+    generate_best_data()
