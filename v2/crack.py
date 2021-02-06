@@ -27,7 +27,7 @@ def crack_key(cipher, cosets, keys):
         pt = (x << 6) | y
         ct = cipher.encrypt(pt)
 
-        res_x, res_y = split(ct >> 6)[1], split(ct & ((1<<6)-1))[1]
+        res_x, res_y = split(ct & ((1<<6)-1))[1], split(ct >> 6)[1]
 
         a = [rho_u_inv, u_inv]
         for i in range(2, ROUNDS):

@@ -17,24 +17,18 @@ class Cipher:
             keys.append(K[keys[-1]])
         return keys
 
-    def _encrypt_block(self, block):
+    def _encrypt_block(self, block, is_encryption):
         L, R = block >> self._half_block_size, block & ((1 << self._half_block_size) - 1)
         for i in range(self._rounds):
-            L, R = R, L ^ (S[R^ self._keys[i]])
-        return (L << self._half_block_size) | R
-
-    def _decrypt_block(self, block):
-        L, R = block >> self._half_block_size, block & ((1 << self._half_block_size) - 1)
-        for i in range(self._rounds):
-            R, L = L, R ^ (S[L ^ self._keys[self._rounds - i - 1]])
-        return (L << self._half_block_size) | R
+            L, R = R, L ^ (S[R^ self._keys[i if is_encryption else (self._rounds - i - 1)]])
+        return (R << self._half_block_size) | L
 
     def encrypt(self, pt):
         pt_blocks = int_to_blocks(pt, self._block_size)
-        ct_blocks = [self._encrypt_block(block) for block in pt_blocks]
+        ct_blocks = [self._encrypt_block(block, True) for block in pt_blocks]
         return blocks_to_int(ct_blocks, self._block_size)
 
     def decrypt(self, ct):
         ct_blocks = int_to_blocks(ct, self._block_size)
-        pt_blocks = [self._decrypt_block(block) for block in ct_blocks]
+        pt_blocks = [self._encrypt_block(block, False) for block in ct_blocks]
         return blocks_to_int(pt_blocks, self._block_size)

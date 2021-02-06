@@ -20,7 +20,7 @@ def get_random_pts():
 
 def check_key(pt, ct):
     x,     y     = pt >> 6, pt & ((1<<6)-1)
-    res_x, res_y = ct >> 6, ct & ((1<<6)-1)
+    res_x, res_y = ct & ((1<<6)-1), ct >> 6
 
     cosets = [split(x)[1]]
     for _ in range(ROUNDS+1):
